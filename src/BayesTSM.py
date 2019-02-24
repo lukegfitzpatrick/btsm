@@ -5,7 +5,6 @@ from scipy import stats
 import pandas as pd
 import theano
 import theano.tensor as tt
-from fbprophet import Prophet
 
 class btsm:
 
@@ -66,11 +65,12 @@ class btsm:
                          sd=sigma,
                          observed=self.df['y_scaled'])
         with m:
-            aprox = pm.find_MAP()
+            self.ses_aprox = pm.find_MAP()
+            self.ses_trace = pm.sample(200)
 
-        self.wkly_ses = self.det_dot(x_weekly, aprox['beta_weekly'])
-        self.yrly_ses = self.det_dot(x_yearly, aprox['beta_yearly'])
-        return (self.det_dot(x_yearly, aprox['beta_yearly'].T) + self.det_dot(x_weekly, aprox['beta_weekly'].T))*self.df['y'].max()
+        self.wkly_ses = self.det_dot(x_weekly, self.ses_aprox['beta_weekly'])
+        self.yrly_ses = self.det_dot(x_yearly, self.ses_aprox['beta_yearly'])
+        return (self.det_dot(x_yearly, self.ses_aprox['beta_yearly'].T) + self.det_dot(x_weekly, self.ses_aprox['beta_weekly'].T))*self.df['y'].max()
 
 
 
@@ -94,8 +94,8 @@ class btsm:
 
             with m:
                 aprox = pm.find_MAP()
-                self.trace = pm.sample(200)
-                self.aprox = aprox
+                self.trend_trace = pm.sample(200)
+                self.trend_aprox = aprox
             g1= self.det_trend(aprox['k'], aprox['m'], aprox['delta'], self.df['t'], s, A) * self.df['y'].max()
 
             return g1
